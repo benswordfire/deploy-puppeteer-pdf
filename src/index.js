@@ -7,7 +7,14 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/pdf', async(req, res) => {
   try {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
     const page = await browser.newPage();
 
     await page.setContent(`<h1>hello, world</h1>`);
@@ -21,8 +28,7 @@ app.get('/pdf', async(req, res) => {
     res.send(pdfBuffer);
 
   } catch (err) {
-    console.error('Failed to generate PDF', err
-    );
+    console.error('Failed to generate PDF', err);
     res.status(500).json({
       success: false,
       msg: 'Failed to generate PDF'
