@@ -5,23 +5,28 @@ import puppeteer from 'puppeteer';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let browserPromise = puppeteer.launch({
-  headless: true,
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
-});
+let browser;
+let page;
+
+(async () => {
+  browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  })
+
+  page = await browser.newPage();
+})();
 
 app.get('/pdf', async(req, res) => {
   try {
-    const browser = await browserPromise;
-    const page = await browser.newPage();
-
     await page.setContent(`<h1>hello, world</h1>`);
+
     const pdfBuffer = await page.pdf();
 
     res.set({ 'Content-Type': 'application/pdf' });
     res.send(pdfBuffer);
 
-    await page.close();
+    await page.evaluate(() => document.body.innerHTML = '');
 
   } catch (err) {
     console.error('Failed to generate PDF', err);
