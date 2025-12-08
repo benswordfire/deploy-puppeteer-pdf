@@ -1,30 +1,46 @@
 import 'dotenv/config';
 import express from 'express';
-import puppeteer from 'puppeteer';
+import puppeteer, { executablePath } from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+chromium.setGraphicsMode = false;
+
 app.get('/pdf', async(req, res) => {
+  let browser = null;
+
   try {
-    const browser = await puppeteer.launch({
-      args: [
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const browserOptions = {
+      args: chromium.args,
+      executablePath: isProduction
+      ? await chromium.executablePath()
+      : process.platform === 'linux'
+        ? '/usr/bin/google-chrome'
+        : undefined,
+      headless: chromium.headless
+    };
+
+    if (!isProduction) {
+      browserOptions.args = [
+        ...browserOptions.args,
         '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
-    });
+        '--disable-setuid-sandbox'
+      ];
+    }
+
+    browser = await puppeteer.launch(browserOptions);
+
     const page = await browser.newPage();
 
     await page.setContent(`<h1>hello, world</h1>`);
 
     const pdfBuffer = await page.pdf();
 
-    await browser.close();
-
     res.set({ 'Content-Type': 'application/pdf' });
-
     res.send(pdfBuffer);
 
   } catch (err) {
@@ -33,6 +49,10 @@ app.get('/pdf', async(req, res) => {
       success: false,
       msg: 'Failed to generate PDF'
     })
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
