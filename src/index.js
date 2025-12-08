@@ -23,7 +23,10 @@ app.get('/pdf', async(req, res) => {
 
     const pdfBuffer = await page.pdf();
 
-    res.set({ 'Content-Type': 'application/pdf' });
+    res.set({ 
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="hello.pdf"'
+    });
     res.send(pdfBuffer);
 
     await page.evaluate(() => document.body.innerHTML = '');
